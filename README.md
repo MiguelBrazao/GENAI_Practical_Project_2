@@ -1,256 +1,113 @@
-# Index
+# Image-to-Prompt Inversion (Generative AI - TP2)
 
-- [1. TP2 Student Starter Pack](#1-tp2-student-starter-pack)
-- [2. Project Setup with `uv`](#2-project-setup-with-uv)
-	- [2.1 Install `uv`](#21-install-uv)
-	- [2.2 Clone the repository](#22-clone-the-repository)
-	- [2.3 Create the environment and install dependencies](#23-create-the-environment-and-install-dependencies)
-	- [2.4 Activate the virtual environment](#24-activate-the-virtual-environment)
-	- [2.5 Run the project](#25-run-the-project)
-	- [2.6 Adding new dependencies](#26-adding-new-dependencies)
-	- [2.7 Updating the local environment](#27-updating-the-local-environment)
-	- [2.8 Files that should be committed](#28-files-that-should-be-committed)
-	- [Minimal setup command summary](#minimal-setup-command-summary)
+This repository contains the implementation of the **Image-to-Prompt Inversion** pipeline for the Generative AI (TP2) project. The objective is to reconstruct text prompts that guide a text-to-image generator (LCM) to reproduce target images as closely as possible, using a hybrid pipeline of vision-language captioning, prompt retrieval, and iterative LLM-based refinement.
 
-# 1. TP2 Student Starter Pack
+---
 
-Files:
+## 📁 Expected Folder Structure
 
-- `TP2_StarterPack_Students.ipynb`: Colab/VS Code starter notebook.
-- `tp2-chosen/`: copy of the TP2 target images.
-- `tp2-chosen.zip`: optional zip with the same target images.
-- `outputs/`: local output folder placeholder.
-
-Recommended Google Drive layout for Colab / VS Code Colab extension:
+For the project to run correctly (both locally and on Google Colab), organize your files according to the structure below:
 
 ```text
-MyDrive/GENAI_TP2/tp2-chosen/*.png
-```
-
-or:
-
-```text
-MyDrive/GENAI_TP2/tp2-chosen.zip
-```
-
-The notebook mounts Google Drive, searches these paths, extracts the zip if needed, and saves generated outputs to:
-
-```text
-MyDrive/GENAI_TP2/outputs/
-```
-
-The LCM settings match the TP2 target generation setup:
-
-- model: `SimianLuo/LCM_Dreamshaper_v7`
-- seed: parsed from target filename
-- inference steps: `8`
-- guidance scale: `8.0`
-- `lcm_origin_steps`: `50`
-- resolution: `768x768`
-
-If Colab raises an error such as:
-
-```text
-cannot import name '_Ink' from 'PIL._typing'
-```
-
-restart the runtime/kernel and rerun the notebook from the first cell. The install cell pins `Pillow<12` to avoid that Diffusers/Pillow compatibility issue.
-
-The install cell also pins `pandas<3` to avoid dependency conflicts with packages commonly preinstalled in Colab, such as Gradio.
-
-# 2. Project Setup with `uv`
-
-This project uses [`uv`](https://docs.astral.sh/uv/) to manage Python, the virtual environment, and dependencies.
-
-The environment is defined by:
-
-```text
-pyproject.toml
-uv.lock
-.python-version
-```
-
-The `.venv/` directory is intentionally not committed to Git. It will be recreated automatically by `uv`.
-
----
-
-## 2.1 Install `uv`
-
-If `uv` is not installed yet, install it with:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Then restart your terminal, or run:
-
-```bash
-source ~/.bashrc
-```
-
-Check that `uv` is available:
-
-```bash
-uv --version
+GENAI_Practical_Project_2/
+├── statements/
+│   ├── GENAI_TP2_Enunciado.pdf
+│   └── TP2_Image-to-Prompt_Inversion.pdf
+├── students/                           # Student subdirectory (contains outputs/ placeholders)
+│   └── outputs/
+├── tp2-chosen/                         # Target images to invert (exactly 6 pngs)
+│   ├── 1159_25.png
+│   ├── 1159_29.png
+│   ├── 1159_3.png
+│   ├── 1159_7.png
+│   ├── 7836.png
+│   └── 9338.png
+├── tp2-chosen.zip                      # Optional compressed archive of target images
+├── outputs/
+│   └── final_submission/               # Folder to save results
+├── FINAL_TP2_StarterPack_Students.ipynb # Main pipeline Jupyter Notebook
+└── README.md                           # Project documentation (this file)
 ```
 
 ---
 
-## 2.2 Clone the repository
+## 🛠️ Installation & Dependencies
 
-```bash
-git clone <REPOSITORY_URL>
-cd <PROJECT_FOLDER>
-```
+The project relies on PyTorch (with CUDA support), Diffusers, Transformers, LPIPS, and auxiliary libraries.
 
-Replace `<REPOSITORY_URL>` with the Git URL of this project.
+### Option A: Local Run using Conda (Recommended)
 
----
+To set up a local environment using Anaconda/Miniconda, run the following commands in your terminal:
 
-## 2.3 Create the environment and install dependencies
+1. **Create and Activate Environment:**
+   ```bash
+   conda create -n GEN_AI_TP2 python=3.11 -y
+   conda activate GEN_AI_TP2
+   ```
+2. **Install PyTorch with CUDA Support:**
+   Select the command matching your CUDA driver version. For CUDA 12.1:
+   ```bash
+   conda install pytorch pytorch-cuda=12.1 -c pytorch -c nvidia -y
+   ```
+3. **Install Required Packages:**
+   Install diffusers, transformers, LPIPS, and specific pinned versions of pillow/pandas to prevent notebook crashes:
+   ```bash
+   python -m pip install "diffusers==0.35.2" "transformers<5" accelerate safetensors matplotlib torchvision ipywidgets "pandas<3" "Pillow<12" numpy lpips notebook
+   ```
+4. **Run Jupyter Notebook:**
+   Launch the notebook server in the project directory:
+   ```bash
+   jupyter notebook
+   ```
+   Select `FINAL_TP2_StarterPack_Students.ipynb` and choose the `GEN_AI_TP2` conda kernel.
 
-Run:
+### Option B: Running on Google Colab (Free Tier - T4 GPU)
 
-```bash
-uv sync
-```
-
-This command will:
-
-- read the required Python version from `.python-version`;
-- create a local `.venv/` virtual environment if it does not exist;
-- install the exact dependency versions from `uv.lock`.
-
----
-
-## 2.4 Activate the virtual environment
-
-On Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-On Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Check that the environment is active:
-
-```bash
-python --version
-which python
-```
-
-The Python executable should point to the local `.venv` folder.
+1. **Upload Notebook:** Upload the `FINAL_TP2_StarterPack_Students.ipynb` file to Google Colab.
+2. **Upload Target Images:** Zip your `tp2-chosen/` directory and upload the `tp2-chosen.zip` file directly to the root of your Colab runtime or mount Google Drive and lay it out under `MyDrive/GENAI_TP2/tp2-chosen.zip`.
+3. **Execution Environment:** Set the Runtime type to **T4 GPU** (highly recommended, as LCM rendering and metric computation require GPU acceleration).
+4. **Notebook Setup Cell:** The first cell in the notebook handles the installation of all required packages automatically (`diffusers`, `transformers`, `accelerate`, `lpips`, and pinned versions `Pillow<12` / `pandas<3`).
 
 ---
 
-## 2.5 Run the project
+## 🚀 Execution & Main Commands
 
-After activating the environment, run the project normally. For example:
+The pipeline is fully automated and runs sequentially cell-by-cell in the Jupyter Notebook:
 
-```bash
-python main.py
-```
+### Step 1: Initialization & Environment Configuration
+*   Loads libraries, validates the GPU, and configures the Latent Consistency Model (LCM) configuration (Dreamshaper v7, 8 inference steps, guidance scale 8.0).
+*   **Mandatory Colab CLIP Patch:** Evaluates the `transformers` version in Colab and applies a patch to prevent type attribute errors with `BaseModelOutputWithPooling` outputs from the CLIP model.
 
-If the project uses a different entry point, replace `main.py` with the correct file or command.
+### Step 2: BLIP Captioning
+*   Runs the BLIP model to generate `NUM_CAPTIONS = 100` candidate prompts per target image using nucleus sampling (`top_k = 50`, `top_p = 0.95`, `temperature = 0.85`).
 
-You can also run commands directly through `uv` without manually activating the environment:
+### Step 3: CLIP Text-Image Retrieval
+*   Compares the text embeddings of all 100 captions to the visual embedding of the target image. It retrieves the top `CLIP_RETRIEVAL_TOP_K = 100` candidates based on text-image cosine similarity.
 
-```bash
-uv run python main.py
-```
+### Step 4: CLIP Rendered Reranking (Visual Reranking)
+*   Renders the top `CLIP_RERANK_TOP_K = 20` candidates using the LCM renderer.
+*   Calculates the visual CLIP similarity between the generated render and the target image to rerank the candidates based on actual visual fidelity.
 
----
+### Step 5: Iterative LLM-based Refinement
+*   Refines the top 3 prompts for each image over `iterations = 6` cycles.
+*   **API Configuration:** Provide your IAEDU API parameters in the configuration cell:
+    ```python
+    IAEDU_API_URL = "https://api.iaedu.pt/agent-chat/api/v1/agent/.../stream"
+    IAEDU_API_KEY = "sk-usr-..."
+    IAEDU_CHANNEL_ID = "cmq..."
+    ```
+*   **Rate-Limit Protections:** The code implements a `time.sleep(10)` delay between iterations and a robust backoff-retry loop to automatically handle `Rate limit reached (429)` errors. 
+*   **Robust Parsing:** Stream token accumulation and regex parser fallbacks are active to prevent data loss in case the LLM response is truncated or malformed.
 
-## 2.6 Adding new dependencies
-
-To add a new dependency, use:
-
-```bash
-uv add package-name
-```
-
-For example:
-
-```bash
-uv add numpy
-```
-
-This updates both:
-
-```text
-pyproject.toml
-uv.lock
-```
-
-After adding dependencies, commit the updated files:
-
-```bash
-git add pyproject.toml uv.lock
-git commit -m "Update dependencies"
-```
+### Step 6: Evaluation & Export
+*   Computes and saves final results to `outputs/final_submission/` including the top-3 images per target, their respective prompts, and a `metrics_summary.json` containing the CLIP similarity, LPIPS distance, and pixel MSE.
+*   Prints mean and standard deviation of target metrics.
 
 ---
 
-## 2.7 Updating the local environment
-
-When pulling changes from Git, dependencies may have changed. After pulling, run:
-
-```bash
-git pull
-uv sync
-```
-
-This updates the local `.venv/` to match the committed `uv.lock` file.
-
----
-
-## 2.8 Files that should be committed
-
-The following files should be committed:
-
-```text
-pyproject.toml
-uv.lock
-.python-version
-README.md
-source code files
-```
-
-The following files should not be committed:
-
-```text
-.venv/
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-.env
-```
-
-Make sure `.venv/` is included in `.gitignore`.
-
----
-
-## 2.9 Minimal setup command summary
-
-For a fresh clone, the complete setup is:
-
-```bash
-git clone <REPOSITORY_URL>
-cd <PROJECT_FOLDER>
-uv sync
-source .venv/bin/activate
-```
-
-Or, without activating manually:
-
-```bash
-git clone <REPOSITORY_URL>
-cd <PROJECT_FOLDER>
-uv sync
-uv run python main.py
-```
+## 📝 Key Design Configuration Parameters
+Adjust these constants in the notebook configuration cells before launching a full run:
+*   `dtype = torch.float32` (Ensures consistency with the professor's setup)
+*   `use_fast = False` (Keeps the slow processor active to match the BLIP model's default behavior)
+*   `CLIP_RETRIEVAL_TOP_K = 100` (Filters candidates in text-space)
+*   `CLIP_RERANK_TOP_K = 20` (Reranks candidates in visual-space)
